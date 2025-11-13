@@ -1,66 +1,157 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🏥 Health Monitoring System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A comprehensive health monitoring and nutrition tracking system built with Laravel.
 
-## About Laravel
+## 📋 Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### 🍎 Nutrition & Health Monitoring
+- **BMI Calculator** - Calculate Body Mass Index
+- **Calorie Calculator** - Calculate daily calorie needs with history tracking
+- **Meal Planner** - Plan your daily meals
+- **Food Guide** - Browse and search food database
+- **Nutrition Monitoring** - Track children's nutrition and growth
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 📊 Growth Monitoring
+- **Growth Tracking** - Monitor children's growth (weight & height)
+- **Stunting Detection** - Detect stunting risk using WHO Z-Score
+- **Pre-Stunting Detection** - Early detection of stunting risk
+- **Growth Reports** - Generate PDF reports
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 👨‍👩‍👧‍👦 Children Management
+- **Children Profile** - Manage multiple children profiles
+- **Growth Logs** - Track growth history with edit/delete features
+- **Food Logs** - Track daily food intake
+- **Alerts** - Get notifications for growth concerns
 
-## Learning Laravel
+### 🔐 User Management
+- **Multi-language Support** (English & Indonesian)
+- **User Authentication** - Secure login/register
+- **Profile Management** - Update profile and password
+- **Admin Panel** - Manage users, food database, and settings
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## 🚀 Latest Updates (v2.0)
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### ✨ New Features:
+- ✅ **Calorie Calculator History** - Save and view calculation history
+- ✅ **Growth Log Edit/Delete** - Edit and delete growth records
+- ✅ **Empty State UI** - Better UX for new users
+- ✅ **AJAX Operations** - Smooth delete operations without page reload
+- ✅ **Confirmation Dialogs** - SweetAlert confirmations for destructive actions
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 📦 Database Changes:
+- New table: `calorie_history_models`
+- Enhanced validation for growth logs
+- Foreign key constraints for data integrity
 
-## Laravel Sponsors
+## 🛠️ Tech Stack
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+- **Framework:** Laravel 10.x
+- **PHP:** >= 8.0
+- **Database:** MySQL/MariaDB
+- **Frontend:** Bootstrap 5, jQuery, SweetAlert2
+- **Icons:** Icofont
+- **PDF:** DomPDF
 
-### Premium Partners
+## 📥 Installation
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+1. **Clone Repository**
+   ```bash
+   git clone https://github.com/Kristinaadine/health_monitoring_main.git
+   cd health_monitoring_main
+   ```
 
-## Contributing
+2. **Install Dependencies**
+   ```bash
+   composer install
+   npm install
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+3. **Environment Setup**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-## Code of Conduct
+4. **Database Configuration**
+   
+   Edit `.env` file:
+   ```env
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=health_monitoring
+   DB_USERNAME=root
+   DB_PASSWORD=
+   ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+5. **Run Migrations**
+   ```bash
+   php artisan migrate
+   ```
 
-## Security Vulnerabilities
+6. **Seed Database (Optional)**
+   ```bash
+   php artisan db:seed
+   ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+7. **Start Development Server**
+   ```bash
+   php artisan serve
+   ```
 
-## License
+8. **Access Application**
+   ```
+   http://localhost:8000
+   ```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 📚 Documentation
+
+Comprehensive documentation available in the `/docs` folder:
+
+- **MIGRATION_GUIDE.md** - Step-by-step migration guide
+- **CHANGELOG_CALORIE_CALCULATOR.md** - Calorie calculator changes
+- **COMPARISON_OLD_VS_NEW.md** - Feature comparison
+- **DOKUMENTASI_NUTRITION_MONITORING.md** - Nutrition monitoring docs
+- **DOKUMENTASI_ZSCORE_DAN_FITUR.md** - Z-Score implementation
+
+## 🔧 Configuration
+
+### Multi-language Setup
+The system supports English and Indonesian. Language files are located in:
+- `resources/lang/en/`
+- `resources/lang/id/`
+
+### Admin Access
+Default admin credentials (after seeding):
+- Email: admin@example.com
+- Password: password
+
+## 🧪 Testing
+
+```bash
+php artisan test
+```
+
+## 📝 License
+
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## 👥 Contributors
+
+- **Kristina Adine** - Initial work
+
+## 🙏 Acknowledgments
+
+- Built with [Laravel](https://laravel.com)
+- WHO Growth Standards for Z-Score calculations
+- Bootstrap for responsive UI
+- SweetAlert2 for beautiful alerts
+
+## 📞 Support
+
+For support, email kristinaadine@example.com or open an issue on GitHub.
+
+---
+
+**Version:** 2.0  
+**Last Updated:** November 13, 2025
