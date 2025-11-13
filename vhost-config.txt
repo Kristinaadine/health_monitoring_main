@@ -1,0 +1,58 @@
+=== INSTRUKSI SETUP XAMPP VIRTUAL HOST ===
+
+1. EDIT FILE HOSTS (Sebagai Administrator):
+   - Buka Notepad sebagai Administrator
+   - File > Open: C:\Windows\System32\drivers\etc\hosts
+   - Tambahkan baris ini di akhir file:
+   
+   127.0.0.1 healthy-monitoring.test
+
+   - Save dan tutup
+
+2. EDIT HTTPD-VHOSTS.CONF:
+   - Buka: C:\xampp\apache\conf\extra\httpd-vhosts.conf
+   - Tambahkan kode ini di AKHIR file:
+
+<VirtualHost *:80>
+    DocumentRoot "C:/xampp/php/LaravelProject/healthy-monitoring/healthy-monitoring-main/public"
+    ServerName healthy-monitoring.test
+    <Directory "C:/xampp/php/LaravelProject/healthy-monitoring/healthy-monitoring-main/public">
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
+
+   - Save dan tutup
+
+3. PASTIKAN HTTPD.CONF MENGAKTIFKAN VHOSTS:
+   - Buka: C:\xampp\apache\conf\httpd.conf
+   - Cari baris: #Include conf/extra/httpd-vhosts.conf
+   - Hapus tanda # di depannya (jika ada)
+   - Seharusnya jadi: Include conf/extra/httpd-vhosts.conf
+   - Save
+
+4. RESTART APACHE:
+   - Di XAMPP Control Panel, klik "Stop" pada Apache
+   - Tunggu sampai berhenti
+   - Klik "Start" lagi
+
+5. AKSES DI BROWSER:
+   http://healthy-monitoring.test
+
+=== ALTERNATIF: Gunakan localhost langsung ===
+
+Jika virtual host terlalu ribet, copy project ke htdocs:
+
+1. Copy folder: C:\xampp\php\LaravelProject\healthy-monitoring\healthy-monitoring-main
+2. Paste ke: C:\xampp\htdocs\
+3. Akses: http://localhost/healthy-monitoring-main/public
+
+=== TROUBLESHOOTING ===
+
+Jika masih error "Connection Refused":
+1. Cek apakah Apache benar-benar running (hijau di XAMPP)
+2. Cek port 80 tidak dipakai aplikasi lain: netstat -an | findstr ":80"
+3. Matikan antivirus sementara
+4. Restart komputer
+5. Coba browser lain (Firefox, Edge)
