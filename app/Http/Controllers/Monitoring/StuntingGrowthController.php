@@ -22,9 +22,39 @@ class StuntingGrowthController extends Controller
         try {
             $data = $request->validated();
 
+            // Handle photo upload
+            if ($request->hasFile('photo')) {
+                $photo = $request->file('photo');
+                
+                // Validate
+                $request->validate([
+                    'photo' => 'image|mimes:jpeg,png,jpg|max:2048'
+                ]);
+                
+                // Generate unique filename
+                $filename = time() . '_' . uniqid() . '.' . $photo->getClientOriginalExtension();
+                
+                // Create directory if not exists
+                if (!file_exists(public_path('uploads/stunting'))) {
+                    mkdir(public_path('uploads/stunting'), 0777, true);
+                }
+                
+                // Move to public/uploads/stunting
+                $photo->move(public_path('uploads/stunting'), $filename);
+                
+                $data['photo'] = $filename;
+            }
+
+            // Calculate age from birth date if provided
+            if ($request->tanggal_lahir) {
+                $birthDate = new \Carbon\Carbon($request->tanggal_lahir);
+                $data['tanggal_lahir'] = $birthDate->format('Y-m-d');
+                $data['usia'] = $birthDate->diffInMonths(now());
+            }
+
             // WHO Z-score
-            $haz = $this->lhfa($request->tinggi_badan, $request->usia, $request->jenis_kelamin);
-            $whz = $this->wfa($request->berat_badan, $request->usia, $request->jenis_kelamin);
+            $haz = $this->lhfa($request->tinggi_badan, $data['usia'], $request->jenis_kelamin);
+            $whz = $this->wfa($request->berat_badan, $data['usia'], $request->jenis_kelamin);
 
             // Cek apakah Z-score berhasil dihitung
             if ($haz === 0 && $whz === 0) {
@@ -47,6 +77,19 @@ class StuntingGrowthController extends Controller
             $faktorUtama = $this->joinPhrases(array_filter([$whoFactors, $riskFactors]));
             $rekomendasi = $this->buildRecommendations($whoStatus, $tips, $data);
 
+            // Get nutrition recommendations using helper
+            $hazRecommendation = \App\Helpers\NutritionRecommendation::getRecommendation(
+                'TB/U', 
+                $haz, 
+                $whoStatus
+            );
+            
+            $whzRecommendation = \App\Helpers\NutritionRecommendation::getRecommendation(
+                'BB/U', 
+                $whz, 
+                $whoStatus
+            );
+
             // Simpan
             $child = StuntingUserModel::create(
                 array_merge($data, [
@@ -57,6 +100,8 @@ class StuntingGrowthController extends Controller
                     'level_risiko' => $finalLevel,
                     'faktor_utama' => $faktorUtama,
                     'rekomendasi' => $rekomendasi,
+                    'haz_recommendation' => json_encode($hazRecommendation),
+                    'whz_recommendation' => json_encode($whzRecommendation),
                 ]),
             );
 
@@ -369,5 +414,73 @@ class StuntingGrowthController extends Controller
         $childName = $data ? $data->nama : 'Anak';
 
         return view('monitoring.growth-detection.stunting.result', compact('setting', 'data', 'weights', 'heights', 'months', 'whow', 'hwho', 'childName'));
+    }
+
+    /**
+     * Download PDF - Data Hari Ini (Latest Only)
+     */
+    public function downloadPDFToday($locale, $id)
+    {
+        $child = StuntingUserModel::findOrFail(decrypt($id));
+        
+        // Check authorization
+        if ($child->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+        
+        $hazRec = json_decode($child->haz_recommendation, true);
+        $whzRec = json_decode($child->whz_recommendation, true);
+        $setting = SettingModel::all();
+        
+        $pdf = \PDF::loadView('monitoring.growth-detection.stunting.pdf-today', [
+            'child' => $child,
+            'hazRec' => $hazRec,
+            'whzRec' => $whzRec,
+            'setting' => $setting,
+        ])->setPaper('a4', 'portrait');
+        
+        $filename = 'laporan-hari-ini-' . str_replace(' ', '-', $child->nama) . '-' . date('Y-m-d') . '.pdf';
+        
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Download PDF - Data Lengkap (All History)
+     */
+    public function downloadPDFComplete($locale, $id)
+    {
+        $child = StuntingUserModel::findOrFail(decrypt($id));
+        
+        // Check authorization
+        if ($child->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+        
+        // Get all history for this child (by name or medical_id)
+        $allHistory = StuntingUserModel::where('user_id', auth()->id())
+            ->where(function($query) use ($child) {
+                $query->where('nama', $child->nama);
+                if ($child->medical_id) {
+                    $query->orWhere('medical_id', $child->medical_id);
+                }
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        $hazRec = json_decode($child->haz_recommendation, true);
+        $whzRec = json_decode($child->whz_recommendation, true);
+        $setting = SettingModel::all();
+        
+        $pdf = \PDF::loadView('monitoring.growth-detection.stunting.pdf-complete', [
+            'child' => $child,
+            'allHistory' => $allHistory,
+            'hazRec' => $hazRec,
+            'whzRec' => $whzRec,
+            'setting' => $setting,
+        ])->setPaper('a4', 'portrait');
+        
+        $filename = 'laporan-lengkap-' . str_replace(' ', '-', $child->nama) . '-' . date('Y-m-d') . '.pdf';
+        
+        return $pdf->download($filename);
     }
 }

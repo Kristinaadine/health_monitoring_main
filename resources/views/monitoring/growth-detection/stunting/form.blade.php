@@ -67,9 +67,59 @@
             {{-- Alert Messages --}}
             @include('components.alert')
             
-            <form id="stunting-form" action="{{ locale_route('growth-detection.stunting.store') }}" method="POST">
+            <form id="stunting-form" action="{{ locale_route('growth-detection.stunting.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="form-group mb-3">
+                    {{-- Foto & Medical ID Section --}}
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <strong>📋 Identitas Anak</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                {{-- Foto Anak --}}
+                                <div class="col-md-12">
+                                    <label class="form-label">📸 Foto Anak (Opsional)</label>
+                                    <input type="file" name="photo" id="photo" class="form-control @error('photo') is-invalid @enderror" accept="image/jpeg,image/png,image/jpg">
+                                    <small class="text-muted">Format: JPG, PNG (Maksimal 2MB)</small>
+                                    @error('photo')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    
+                                    {{-- Photo Preview --}}
+                                    <div id="photo-preview" class="mt-3" style="display: none;">
+                                        <div class="d-flex align-items-center">
+                                            <img id="preview-image" src="" class="rounded" style="max-width: 150px; max-height: 150px; object-fit: cover;">
+                                            <button type="button" class="btn btn-sm btn-danger ms-3" id="remove-photo">
+                                                <i class="icofont-trash"></i> Hapus Foto
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Medical ID --}}
+                                <div class="col-md-6">
+                                    <label class="form-label">🏥 ID Rekam Medis (Opsional)</label>
+                                    <input type="text" name="medical_id" id="medical_id" class="form-control @error('medical_id') is-invalid @enderror" value="{{ old('medical_id') }}" placeholder="Contoh: RM-2025-001">
+                                    <small class="text-muted">ID untuk sistem internal (opsional)</small>
+                                    @error('medical_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                {{-- Tanggal Lahir --}}
+                                <div class="col-md-6">
+                                    <label class="form-label">🎂 Tanggal Lahir <span class="text-danger">*</span></label>
+                                    <input type="date" name="tanggal_lahir" id="tanggal_lahir" class="form-control @error('tanggal_lahir') is-invalid @enderror" value="{{ old('tanggal_lahir') }}" max="{{ date('Y-m-d') }}" required>
+                                    <small class="text-muted">Usia akan dihitung otomatis</small>
+                                    @error('tanggal_lahir')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">@t('Nama anak') <span class="text-danger">*</span></label>
@@ -374,6 +424,73 @@
 @push('js')
     <script>
         $(document).ready(function() {
+            // Photo Preview
+            $('#photo').on('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Check file size (2MB max)
+                    if (file.size > 2 * 1024 * 1024) {
+                        alert('⚠️ Ukuran file maksimal 2MB');
+                        $(this).val('');
+                        $('#photo-preview').hide();
+                        return;
+                    }
+                    
+                    // Check file type
+                    if (!file.type.match('image/(jpeg|png|jpg)')) {
+                        alert('⚠️ Format file harus JPG atau PNG');
+                        $(this).val('');
+                        $('#photo-preview').hide();
+                        return;
+                    }
+                    
+                    // Show preview
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#preview-image').attr('src', e.target.result);
+                        $('#photo-preview').fadeIn();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Remove photo
+            $('#remove-photo').on('click', function() {
+                $('#photo').val('');
+                $('#photo-preview').fadeOut();
+            });
+            
+            // Auto calculate age from birth date
+            $('#tanggal_lahir').on('change', function() {
+                const birthDate = new Date($(this).val());
+                const today = new Date();
+                
+                // Calculate months
+                let months = (today.getFullYear() - birthDate.getFullYear()) * 12;
+                months -= birthDate.getMonth();
+                months += today.getMonth();
+                
+                // Adjust if day hasn't occurred yet this month
+                if (today.getDate() < birthDate.getDate()) {
+                    months--;
+                }
+                
+                // Validate age range (0-60 months)
+                if (months < 0) {
+                    alert('⚠️ Tanggal lahir tidak boleh di masa depan');
+                    $(this).val('');
+                    $('#usia').val('');
+                } else if (months > 60) {
+                    alert('⚠️ Usia maksimal 60 bulan (5 tahun)');
+                    $(this).val('');
+                    $('#usia').val('');
+                } else {
+                    $('#usia').val(months);
+                    $('#usia').removeClass('is-invalid').addClass('is-valid');
+                    $('#error-usia').addClass('d-none');
+                }
+            });
+            
             $("#add-growth").trigger('click');
             
             // Real-time validation function with instant alert
