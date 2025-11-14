@@ -22,34 +22,37 @@ class StuntingGrowthController extends Controller
         try {
             $data = $request->validated();
 
-            // Handle photo upload
-            if ($request->hasFile('photo')) {
-                $photo = $request->file('photo');
-                
-                // Validate
-                $request->validate([
-                    'photo' => 'image|mimes:jpeg,png,jpg|max:2048'
-                ]);
-                
-                // Generate unique filename
-                $filename = time() . '_' . uniqid() . '.' . $photo->getClientOriginalExtension();
-                
-                // Create directory if not exists
-                if (!file_exists(public_path('uploads/stunting'))) {
-                    mkdir(public_path('uploads/stunting'), 0777, true);
-                }
-                
-                // Move to public/uploads/stunting
-                $photo->move(public_path('uploads/stunting'), $filename);
-                
-                $data['photo'] = $filename;
-            }
-
             // Calculate age from birth date if provided
             if ($request->tanggal_lahir) {
                 $birthDate = new \Carbon\Carbon($request->tanggal_lahir);
                 $data['tanggal_lahir'] = $birthDate->format('Y-m-d');
                 $data['usia'] = $birthDate->diffInMonths(now());
+            }
+            
+            // Cek apakah anak ini sudah pernah didata sebelumnya
+            $existingChild = StuntingUserModel::where('user_id', auth()->user()->id)
+                ->where('nama', $request->nama)
+                ->where('jenis_kelamin', $request->jenis_kelamin)
+                ->first();
+            
+            // Gunakan medical_id dan photo dari data pertama jika sudah ada
+            if ($existingChild) {
+                $data['medical_id'] = $existingChild->medical_id;
+                $data['photo'] = $existingChild->photo;
+                \Log::info('Stunting Store - Using existing medical_id and photo', [
+                    'medical_id' => $existingChild->medical_id,
+                    'photo' => $existingChild->photo
+                ]);
+            } else {
+                // Data pertama kali - generate medical_id baru jika belum ada
+                if (!$request->medical_id) {
+                    $totalChildren = StuntingUserModel::where('user_id', auth()->user()->id)
+                        ->distinct('nama')
+                        ->count('nama') + 1;
+                    $data['medical_id'] = 'RM-' . date('Y') . '-' . str_pad($totalChildren, 3, '0', STR_PAD_LEFT);
+                }
+                
+                \Log::info('Stunting Store - Generated new medical_id', ['medical_id' => $data['medical_id']]);
             }
 
             // WHO Z-score

@@ -95,9 +95,11 @@ Route::prefix('{locale}')
 
         // GROWTH MONITORING
         Route::get('/growth-monitoring', [GrowthMonitoringController::class, 'index'])->name('growth-monitoring.index');
+        Route::get('/growth-monitoring/get-user-data', [GrowthMonitoringController::class, 'getUserData'])->name('growth-monitoring.get-user-data');
         Route::post('/growth-monitoring', [GrowthMonitoringController::class, 'store'])->name('growth-monitoring.store');
         Route::get('/growth-monitoring/{id}', [GrowthMonitoringController::class, 'show'])->name('growth-monitoring.show');
         Route::get('/growth-monitoring/{id}/download-report', [GrowthMonitoringController::class, 'downloadReport'])->name('growth-monitoring.download-report');
+        Route::get('/growth-monitoring/download/complete-report', [GrowthMonitoringController::class, 'downloadCompleteReport'])->name('growth-monitoring.download-complete-report');
         Route::delete('/growth-monitoring/{id}', [GrowthMonitoringController::class, 'destroy'])->name('growth-monitoring.destroy');
 
         // GROWTH DETECTION

@@ -14,8 +14,53 @@
                     <div id="modal-error-addnew" class="mt-2"></div>
                 </div>
                 
-                <form action="#" class="" method="POST" id="formAddNew">
+                <form action="#" class="" method="POST" id="formAddNew" enctype="multipart/form-data">
                     @csrf
+                    
+                    {{-- Identitas Section --}}
+                    <div class="card mb-3 border-0 bg-light">
+                        <div class="card-body p-3">
+                            <h6 class="mb-3"><strong>📋 Identitas Anak</strong></h6>
+                            
+                            {{-- ID User --}}
+                            <div class="form-group mb-3">
+                                <label class="form-label">🏥 ID Pengenal</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control bg-light" id="user_id_new" name="user_id" 
+                                           readonly style="font-weight: bold; font-size: 1.1rem;">
+                                    <button type="button" class="btn btn-outline-secondary" id="btn-copy-id" 
+                                            onclick="copyChildId()" title="Copy ID">
+                                        <i class="icofont-copy"></i> Copy
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" id="btn-refresh-id" 
+                                            onclick="generateChildId()" title="Generate ID Baru">
+                                        <i class="icofont-refresh"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">ID otomatis dibuat saat modal dibuka. Klik refresh untuk generate ulang.</small>
+                            </div>
+                            
+                            {{-- Foto --}}
+                            <div class="form-group mb-0">
+                                <label class="form-label">📸 Foto Anak (Opsional)</label>
+                                <input type="file" class="form-control" id="photo_new" name="photo" 
+                                       accept="image/jpeg,image/png,image/jpg">
+                                <small class="text-muted">Format: JPG, PNG (Max 2MB)</small>
+                                
+                                {{-- Photo Preview --}}
+                                <div id="photo-preview-new" class="mt-2" style="display: none;">
+                                    <div class="d-flex align-items-center">
+                                        <img id="preview-image-new" src="" class="rounded" 
+                                             style="max-width: 100px; max-height: 100px; object-fit: cover; border: 2px solid #ddd;">
+                                        <button type="button" class="btn btn-sm btn-danger ms-2" id="remove-photo-new">
+                                            <i class="icofont-trash"></i> Hapus
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="form-row">
                         <div class="mb-3 col-md-12 form-group">
                             <label class="form-label">{{__('monitoring.use_existing_name')}}?</label>
@@ -134,7 +179,106 @@
 
 @push('js')
     <script>
+        // Generate Child ID with format: {NoUrut}-{Abjad}-{4Angka}
+        function generateChildId() {
+            // Get total children count for this user (will be set from backend)
+            const totalChildren = {{ \App\Models\GrowthMonitoringModel::where('users_id', auth()->id())->distinct('name')->count('name') + 1 }};
+            
+            // Format nomor urut dengan leading zero (01, 02, 03, ...)
+            const noUrut = String(totalChildren).padStart(2, '0');
+            
+            // Random abjad A-Z
+            const abjad = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+            
+            // Random 4 angka
+            const angka = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+            
+            // Combine
+            const childId = `${noUrut}-${abjad}-${angka}`;
+            
+            // Set to input
+            $('#user_id_new').val(childId);
+            
+            // Show notification
+            $.notify("ID baru: " + childId, "info");
+            
+            return childId;
+        }
+        
+        // Copy Child ID to clipboard
+        function copyChildId() {
+            const childId = $('#user_id_new').val();
+            
+            if (!childId) {
+                $.notify("ID belum dibuat", "error");
+                return;
+            }
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(childId).then(function() {
+                $.notify("ID berhasil dicopy: " + childId, "success");
+                
+                // Visual feedback
+                $('#btn-copy-id').html('<i class="icofont-check"></i> Copied!');
+                setTimeout(function() {
+                    $('#btn-copy-id').html('<i class="icofont-copy"></i> Copy');
+                }, 2000);
+            }).catch(function(err) {
+                // Fallback for older browsers
+                const tempInput = document.createElement('input');
+                tempInput.value = childId;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                
+                $.notify("ID berhasil dicopy: " + childId, "success");
+            });
+        }
+        
         $(document).ready(function() {
+            // Generate ID when modal is opened
+            $('#modalAddNew').on('shown.bs.modal', function() {
+                if (!$('#user_id_new').val()) {
+                    generateChildId();
+                }
+            });
+            
+            // Photo Preview for modalAddNew
+            $('#photo_new').on('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Check file size (2MB max)
+                    if (file.size > 2 * 1024 * 1024) {
+                        alert('⚠️ Ukuran file maksimal 2MB');
+                        $(this).val('');
+                        $('#photo-preview-new').hide();
+                        return;
+                    }
+                    
+                    // Check file type
+                    if (!file.type.match('image/(jpeg|png|jpg)')) {
+                        alert('⚠️ Format file harus JPG atau PNG');
+                        $(this).val('');
+                        $('#photo-preview-new').hide();
+                        return;
+                    }
+                    
+                    // Show preview
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#preview-image-new').attr('src', e.target.result);
+                        $('#photo-preview-new').fadeIn();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Remove photo for modalAddNew
+            $('#remove-photo-new').on('click', function() {
+                $('#photo_new').val('');
+                $('#photo-preview-new').fadeOut();
+            });
             
             // Show alert in modal
             function showModalAlertAddNew(messages) {
@@ -374,21 +518,18 @@
                 }
                 var choose = $('input[name="choose"]:checked').val();
                 var url = "{{ locale_route('growth-monitoring.store') }}";
-                var fd = $('#formAddNew').serializeArray();
+                
+                // Use FormData for file upload
+                var formData = new FormData($('#formAddNew')[0]);
+                
                 if (choose == "yes") {
                     let text = $("#chooseAdd").val();
                     const ng = text.split("|");
-                    fd.push({
-                        name: "name", value: ng[0]
-                    })
-                    fd.push({
-                        name: "gender", value: ng[1]
-                    })
+                    formData.append("name", ng[0]);
+                    formData.append("gender", ng[1]);
                 } else if (choose == "no") {
                     var nameAdd = $("#nameAdd").val()
-                    fd.push({
-                        name: "name", value: nameAdd
-                    })
+                    formData.append("name", nameAdd);
                 } else if (choose == ''){
                     $(".choose-check").notify(
                         "Choose Use existing name first or Add new Name", {
@@ -401,7 +542,9 @@
                 $.ajax({
                     type: "POST",
                     url: url,
-                    data: fd,
+                    data: formData,
+                    processData: false,
+                    contentType: false,
                     dataType: "json",
                     beforeSend: function() {
                         $('#btnSubmitAdd').attr('disabled', true);

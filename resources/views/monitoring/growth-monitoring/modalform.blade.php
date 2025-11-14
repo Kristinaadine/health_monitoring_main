@@ -1,3 +1,5 @@
+
+
 <div class="modal fade" id="modalForm" tabindex="-1" role="dialog" aria-labelledby="modalFormLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -14,11 +16,73 @@
                     <div id="modal-error-messages" class="mt-2"></div>
                 </div>
                 
-                <form action="#" class="" method="POST" id="formAdd">
+                <form action="#" class="" method="POST" id="formAdd" enctype="multipart/form-data">
                     @csrf
+                    
+                    {{-- Identitas Section --}}
+                    <div class="card mb-3 border-0 bg-light">
+                        <div class="card-body p-3">
+                            <h6 class="mb-3"><strong>📋 Identitas Anak</strong></h6>
+                            
+                            {{-- ID User - Tampilkan ID yang sudah ada --}}
+                            <div class="form-group mb-3" id="user-id-display">
+                                <label class="form-label">🏥 ID Pengenal</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control bg-light" id="user_id_display" 
+                                           readonly style="font-weight: bold; font-size: 1.1rem;">
+                                    <button type="button" class="btn btn-outline-secondary" id="btn-copy-id-form" 
+                                            onclick="copyChildIdForm()" title="Copy ID">
+                                        <i class="icofont-copy"></i> Copy
+                                    </button>
+                                </div>
+                                <small class="text-muted">ID ini permanen untuk anak ini</small>
+                            </div>
+                            {{-- JANGAN kirim user_id ke backend, biarkan backend yang ambil dari tabel users --}}
+                            
+                            {{-- Foto - Tampilkan edit foto jika sudah ada data sebelumnya --}}
+                            <div class="form-group mb-0" id="photo-section">
+                                <label class="form-label">📸 Foto Anak</label>
+                                
+                                {{-- Jika belum ada foto (data pertama) --}}
+                                <div id="photo-upload-first">
+                                    <input type="file" class="form-control" id="photo" name="photo" 
+                                           accept="image/jpeg,image/png,image/jpg">
+                                    <small class="text-muted">Format: JPG, PNG (Max 2MB) - Opsional</small>
+                                </div>
+                                
+                                {{-- Jika sudah ada foto (data kedua dst) --}}
+                                <div id="photo-edit-section" style="display: none;">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <img id="existing-photo" src="" class="rounded" 
+                                             style="max-width: 80px; max-height: 80px; object-fit: cover; border: 2px solid #ddd;">
+                                        <div class="ms-3">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-change-photo">
+                                                <i class="icofont-edit"></i> Ubah Foto
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <input type="file" class="form-control d-none" id="photo-edit" name="photo" 
+                                           accept="image/jpeg,image/png,image/jpg">
+                                    <small class="text-muted">Klik "Ubah Foto" jika ingin mengganti foto</small>
+                                </div>
+                                
+                                {{-- Photo Preview --}}
+                                <div id="photo-preview-modal" class="mt-2" style="display: none;">
+                                    <div class="d-flex align-items-center">
+                                        <img id="preview-image-modal" src="" class="rounded" 
+                                             style="max-width: 100px; max-height: 100px; object-fit: cover; border: 2px solid #ddd;">
+                                        <button type="button" class="btn btn-sm btn-danger ms-2" id="remove-photo-modal">
+                                            <i class="icofont-trash"></i> Hapus
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="form-row">
                         <div class="col-md-12 form-group mb-3">
-                            <label class="form-label">{{__('monitoring.full_name')}}</label>
+                            <label class="form-label">{{__('monitoring.full_name')}} <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <input placeholder="Example : John Doe" type="text" class="form-control"
                                     id="name" name="name" required>
@@ -107,7 +171,132 @@
 
 @push('js')
     <script>
+        // Copy Child ID for modalForm
+        function copyChildIdForm() {
+            const childId = $('#user_id_display').val();
+            if (!childId || childId === 'Akan dibuat otomatis') {
+                $.notify("ID belum tersedia. Simpan data terlebih dahulu.", "info");
+                return;
+            }
+            
+            navigator.clipboard.writeText(childId).then(function() {
+                $.notify("ID berhasil dicopy: " + childId, "success");
+                $('#btn-copy-id-form').html('<i class="icofont-check"></i> Copied!');
+                setTimeout(function() {
+                    $('#btn-copy-id-form').html('<i class="icofont-copy"></i> Copy');
+                }, 2000);
+            }).catch(function(err) {
+                const tempInput = document.createElement('input');
+                tempInput.value = childId;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                $.notify("ID berhasil dicopy: " + childId, "success");
+            });
+        }
+        
         $(document).ready(function() {
+            // Load existing child data when modalForm is opened
+            $('#modalForm').on('shown.bs.modal', function() {
+                // Check if user already has children data
+                $.ajax({
+                    url: "{{ locale_route('growth-monitoring.get-user-data') }}",
+                    type: "GET",
+                    success: function(response) {
+                        // Tampilkan ID dari backend (HANYA UNTUK DISPLAY, TIDAK DIKIRIM KE BACKEND)
+                        $('#user_id_display').val(response.child_id);
+                        $('#user-id-display').show();
+                        
+                        if (response.has_data) {
+                            // User sudah pernah input data - tampilkan foto
+                            if (response.photo) {
+                                $('#photo-upload-first').hide();
+                                $('#existing-photo').attr('src', response.photo_url);
+                                $('#photo-edit-section').show();
+                            } else {
+                                $('#photo-upload-first').show();
+                                $('#photo-edit-section').hide();
+                            }
+                        } else {
+                            // User belum pernah input data
+                            $('#photo-upload-first').show();
+                            $('#photo-edit-section').hide();
+                        }
+                    },
+                    error: function() {
+                        // Fallback
+                        $('#user_id_display').val('Akan dibuat otomatis');
+                        $('#user-id-display').show();
+                        $('#photo-upload-first').show();
+                        $('#photo-edit-section').hide();
+                    }
+                });
+            });
+            
+            // Button change photo
+            $('#btn-change-photo').on('click', function() {
+                $('#photo-edit').click();
+            });
+            
+            // Photo Preview for first upload
+            $('#photo').on('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 2 * 1024 * 1024) {
+                        alert('⚠️ Ukuran file maksimal 2MB');
+                        $(this).val('');
+                        $('#photo-preview-modal').hide();
+                        return;
+                    }
+                    
+                    if (!file.type.match('image/(jpeg|png|jpg)')) {
+                        alert('⚠️ Format file harus JPG atau PNG');
+                        $(this).val('');
+                        $('#photo-preview-modal').hide();
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#preview-image-modal').attr('src', e.target.result);
+                        $('#photo-preview-modal').fadeIn();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Photo Preview for edit
+            $('#photo-edit').on('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 2 * 1024 * 1024) {
+                        alert('⚠️ Ukuran file maksimal 2MB');
+                        $(this).val('');
+                        return;
+                    }
+                    
+                    if (!file.type.match('image/(jpeg|png|jpg)')) {
+                        alert('⚠️ Format file harus JPG atau PNG');
+                        $(this).val('');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#existing-photo').attr('src', e.target.result);
+                        $.notify("Foto akan diupdate", "info");
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Remove photo
+            $('#remove-photo-modal').on('click', function() {
+                $('#photo').val('');
+                $('#photo-preview-modal').fadeOut();
+            });
+            
             // Show alert in modal
             function showModalAlert(messages) {
                 const alertBox = $('#modal-validation-alert');
@@ -242,12 +431,16 @@
                 }
 
                 var url = "{{ locale_route('growth-monitoring.store') }}";
-                var fd = $('#formAdd').serialize();
+                
+                // Use FormData for file upload
+                var formData = new FormData($('#formAdd')[0]);
 
                 $.ajax({
                     type: "POST",
                     url: url,
-                    data: fd,
+                    data: formData,
+                    processData: false,
+                    contentType: false,
                     dataType: "json",
                     beforeSend: function() {
                         $('#btnSubmit').attr('disabled', true);
@@ -263,7 +456,14 @@
                             $('.text-danger').addClass('d-none');
                             
                             $('#modalForm').modal('hide');
-                            $.notify(response.message, "success");
+                            
+                            // Tampilkan notifikasi dengan ID
+                            if (response.child_id) {
+                                $.notify(response.message + " | ID Anda: " + response.child_id, "success");
+                            } else {
+                                $.notify(response.message, "success");
+                            }
+                            
                             setTimeout(function() {
                                 location.replace(response.redirect);
                             }, 1500);

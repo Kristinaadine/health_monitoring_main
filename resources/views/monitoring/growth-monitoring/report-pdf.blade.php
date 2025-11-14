@@ -1,350 +1,306 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Pertumbuhan Anak</title>
+    <meta charset="utf-8">
+    <title>Laporan Perkembangan Pertumbuhan - {{ $childName }}</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
-            font-family: 'DejaVu Sans', Arial, sans-serif;
-            font-size: 11pt;
-            line-height: 1.6;
+            font-family: 'DejaVu Sans', sans-serif;
+            font-size: 11px;
             color: #333;
-            padding: 20px;
+            line-height: 1.6;
         }
-        
         .header {
             text-align: center;
             margin-bottom: 30px;
-            border-bottom: 3px solid #28a745;
+            border-bottom: 3px solid #55BF3B;
             padding-bottom: 15px;
         }
-        
         .header h1 {
-            color: #28a745;
-            font-size: 24pt;
+            color: #55BF3B;
+            margin: 0;
+            font-size: 20px;
+        }
+        .header p {
+            margin: 5px 0;
+            color: #666;
+        }
+        .info-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196F3;
+        }
+        .info-box h3 {
+            margin: 0 0 10px 0;
+            color: #2196F3;
+            font-size: 14px;
+        }
+        .info-row {
+            display: table;
+            width: 100%;
             margin-bottom: 5px;
         }
-        
-        .header p {
-            color: #666;
-            font-size: 10pt;
+        .info-label {
+            display: table-cell;
+            width: 40%;
+            font-weight: bold;
         }
-        
-        .section {
-            margin-bottom: 25px;
+        .info-value {
+            display: table-cell;
+            width: 60%;
         }
-        
-        .section-title {
-            background-color: #28a745;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table th {
+            background: #55BF3B;
             color: white;
-            padding: 8px 12px;
-            font-size: 13pt;
-            font-weight: bold;
-            margin-bottom: 12px;
-        }
-        
-        .info-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 15px;
-        }
-        
-        .info-table td {
-            padding: 6px 10px;
-            border: 1px solid #ddd;
-        }
-        
-        .info-table td:first-child {
-            font-weight: bold;
-            width: 35%;
-            background-color: #f8f9fa;
-        }
-        
-        .result-box {
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .result-box.normal {
-            border-color: #28a745;
-            background-color: #d4edda;
-        }
-        
-        .result-box.warning {
-            border-color: #ffc107;
-            background-color: #fff3cd;
-        }
-        
-        .result-box.danger {
-            border-color: #dc3545;
-            background-color: #f8d7da;
-        }
-        
-        .result-title {
-            font-size: 14pt;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-        
-        .zscore-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 12pt;
-        }
-        
-        .category-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 9pt;
-        }
-        
-        .category-table th,
-        .category-table td {
-            border: 1px solid #ddd;
-            padding: 6px 8px;
+            padding: 10px;
             text-align: left;
+            font-size: 11px;
         }
-        
-        .category-table th {
-            background-color: #f8f9fa;
+        table td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        .badge {
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 9px;
             font-weight: bold;
+            display: inline-block;
         }
-        
+        .badge-success {
+            background: #55BF3B;
+            color: white;
+        }
+        .badge-warning {
+            background: #FFC107;
+            color: #333;
+        }
+        .badge-danger {
+            background: #F44336;
+            color: white;
+        }
+        .summary-box {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 2px solid #55BF3B;
+        }
+        .summary-box h3 {
+            margin: 0 0 10px 0;
+            color: #55BF3B;
+            font-size: 14px;
+        }
         .footer {
-            margin-top: 40px;
+            margin-top: 30px;
             padding-top: 15px;
             border-top: 2px solid #ddd;
             text-align: center;
-            font-size: 9pt;
+            font-size: 9px;
             color: #666;
         }
-        
-        .recommendation {
-            background-color: #e7f3ff;
-            border-left: 4px solid #0066cc;
-            padding: 12px;
-            margin-top: 10px;
-        }
-        
-        .recommendation strong {
-            color: #0066cc;
-        }
-        
         .page-break {
             page-break-after: always;
+        }
+        .chart-placeholder {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            margin: 20px 0;
         }
     </style>
 </head>
 <body>
     {{-- Header --}}
     <div class="header">
-        <h1>📊 LAPORAN PERTUMBUHAN ANAK</h1>
+        <h1>📊 LAPORAN PERKEMBANGAN PERTUMBUHAN ANAK</h1>
         <p>Berdasarkan Standar WHO Z-Score</p>
-        <p style="font-size: 9pt; margin-top: 5px;">Digenerate pada: {{ $generatedAt }}</p>
+        <p>Tanggal Cetak: {{ now()->locale('id')->isoFormat('D MMMM YYYY, HH:mm') }} WIB</p>
     </div>
 
     {{-- Informasi Anak --}}
-    <div class="section">
-        <div class="section-title">👶 INFORMASI ANAK</div>
-        <table class="info-table">
+    <div class="info-box">
+        <h3>👶 Informasi Anak</h3>
+        <div class="info-row">
+            <div class="info-label">Nama:</div>
+            <div class="info-value">{{ $childName }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">ID Pengenal:</div>
+            <div class="info-value">{{ $data->first()->child_id ?? 'N/A' }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Jenis Kelamin:</div>
+            <div class="info-value">{{ $data->first()->gender == 'L' ? 'Laki-laki' : 'Perempuan' }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Total Pemeriksaan:</div>
+            <div class="info-value">{{ $data->count() }} kali</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Periode:</div>
+            <div class="info-value">
+                {{ $data->last()->created_at->locale('id')->isoFormat('D MMMM YYYY') }} - 
+                {{ $data->first()->created_at->locale('id')->isoFormat('D MMMM YYYY') }}
+            </div>
+        </div>
+    </div>
+
+    {{-- Ringkasan Terbaru --}}
+    @if($data->count() > 0)
+    @php
+        $latest = $data->first();
+        $latestHeight = $latest->history->where('type', 'LH')->first();
+        $latestWeight = $latest->history->where('type', 'W')->first();
+    @endphp
+    <div class="summary-box">
+        <h3>📈 Ringkasan Data Terbaru ({{ $latest->age }} bulan)</h3>
+        <table style="margin: 0;">
             <tr>
-                <td>Nama Lengkap</td>
-                <td>{{ $child->name }}</td>
-            </tr>
-            <tr>
-                <td>Usia</td>
-                <td>{{ $child->age }} bulan ({{ floor($child->age / 12) }} tahun {{ $child->age % 12 }} bulan)</td>
-            </tr>
-            <tr>
-                <td>Jenis Kelamin</td>
-                <td>{{ $child->gender == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
-            </tr>
-            <tr>
-                <td>Tinggi Badan</td>
-                <td>{{ $child->height }} cm</td>
-            </tr>
-            <tr>
-                <td>Berat Badan</td>
-                <td>{{ $child->weight }} kg</td>
-            </tr>
-            <tr>
-                <td>Tanggal Pengukuran</td>
-                <td>{{ \Carbon\Carbon::parse($child->created_at)->locale('id')->isoFormat('D MMMM YYYY') }}</td>
+                <td style="border: none; width: 50%;">
+                    <strong>🟢 Tinggi Badan (TB/U)</strong><br>
+                    Z-Score: <strong>{{ $latestHeight ? number_format($latestHeight->zscore, 2) : 'N/A' }}</strong><br>
+                    Status: 
+                    @if($latestHeight && $latestHeight->zscore)
+                        @if($latestHeight->zscore >= -2 && $latestHeight->zscore <= 2)
+                            <span class="badge badge-success">Normal ✓</span>
+                        @elseif($latestHeight->zscore >= -3 && $latestHeight->zscore < -2 || $latestHeight->zscore > 2 && $latestHeight->zscore <= 3)
+                            <span class="badge badge-warning">Waspada !</span>
+                        @else
+                            <span class="badge badge-danger">Perlu Perhatian !!</span>
+                        @endif
+                    @endif
+                </td>
+                <td style="border: none; width: 50%;">
+                    <strong>🔵 Berat Badan (BB/U)</strong><br>
+                    Z-Score: <strong>{{ $latestWeight ? number_format($latestWeight->zscore, 2) : 'N/A' }}</strong><br>
+                    Status: 
+                    @if($latestWeight && $latestWeight->zscore)
+                        @if($latestWeight->zscore >= -2 && $latestWeight->zscore <= 2)
+                            <span class="badge badge-success">Normal ✓</span>
+                        @elseif($latestWeight->zscore >= -3 && $latestWeight->zscore < -2 || $latestWeight->zscore > 2 && $latestWeight->zscore <= 3)
+                            <span class="badge badge-warning">Waspada !</span>
+                        @else
+                            <span class="badge badge-danger">Perlu Perhatian !!</span>
+                        @endif
+                    @endif
+                </td>
             </tr>
         </table>
     </div>
+    @endif
 
-    {{-- Hasil TB/U --}}
-    <div class="section">
-        <div class="section-title">📏 HASIL ANALISIS TB/U (Tinggi Badan menurut Umur)</div>
-        
-        @if($heightHistory)
+    {{-- Riwayat Pemeriksaan --}}
+    <h3 style="color: #55BF3B; margin-top: 30px;">📋 Riwayat Pemeriksaan Lengkap</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Tanggal</th>
+                <th>Usia<br>(bulan)</th>
+                <th>Tinggi<br>(cm)</th>
+                <th>Berat<br>(kg)</th>
+                <th>Z-Score<br>TB/U</th>
+                <th>Status<br>TB/U</th>
+                <th>Z-Score<br>BB/U</th>
+                <th>Status<br>BB/U</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($data->reverse() as $index => $record)
             @php
-                $hZscore = $heightHistory->zscore;
-                $hClass = 'normal';
-                if ($hZscore < -3 || $hZscore > 3) $hClass = 'danger';
-                elseif ($hZscore < -2 || $hZscore > 2) $hClass = 'warning';
+                $heightHistory = $record->history->where('type', 'LH')->first();
+                $weightHistory = $record->history->where('type', 'W')->first();
             @endphp
-            
-            <div class="result-box {{ $hClass }}">
-                <div class="result-title">{{ $heightHistory->hasil_diagnosa }}</div>
-                <p><strong>Z-Score:</strong> <span class="zscore-badge">{{ number_format($hZscore, 2) }}</span></p>
-                <p style="margin-top: 8px;"><strong>Interpretasi:</strong></p>
-                <p>{{ $heightHistory->deskripsi_diagnosa }}</p>
-            </div>
-            
-            <div class="recommendation">
-                <strong>💡 Rekomendasi Tindakan:</strong>
-                <p>{{ $heightHistory->penanganan }}</p>
-            </div>
-        @else
-            <p>Data tidak tersedia</p>
-        @endif
-    </div>
+            <tr>
+                <td>{{ $index + 1 }}</td>
+                <td>{{ $record->created_at->locale('id')->isoFormat('D MMM YYYY') }}</td>
+                <td style="text-align: center;">{{ $record->age }}</td>
+                <td style="text-align: center;">{{ $record->height }}</td>
+                <td style="text-align: center;">{{ $record->weight }}</td>
+                <td style="text-align: center;">
+                    {{ $heightHistory ? number_format($heightHistory->zscore, 2) : 'N/A' }}
+                </td>
+                <td>
+                    @if($heightHistory && $heightHistory->zscore)
+                        @if($heightHistory->zscore >= -2 && $heightHistory->zscore <= 2)
+                            <span class="badge badge-success">Normal</span>
+                        @elseif($heightHistory->zscore >= -3 && $heightHistory->zscore < -2 || $heightHistory->zscore > 2 && $heightHistory->zscore <= 3)
+                            <span class="badge badge-warning">Waspada</span>
+                        @else
+                            <span class="badge badge-danger">Perlu Perhatian</span>
+                        @endif
+                    @endif
+                </td>
+                <td style="text-align: center;">
+                    {{ $weightHistory ? number_format($weightHistory->zscore, 2) : 'N/A' }}
+                </td>
+                <td>
+                    @if($weightHistory && $weightHistory->zscore)
+                        @if($weightHistory->zscore >= -2 && $weightHistory->zscore <= 2)
+                            <span class="badge badge-success">Normal</span>
+                        @elseif($weightHistory->zscore >= -3 && $weightHistory->zscore < -2 || $weightHistory->zscore > 2 && $weightHistory->zscore <= 3)
+                            <span class="badge badge-warning">Waspada</span>
+                        @else
+                            <span class="badge badge-danger">Perlu Perhatian</span>
+                        @endif
+                    @endif
+                </td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
 
-    {{-- Hasil BB/U --}}
-    <div class="section">
-        <div class="section-title">⚖️ HASIL ANALISIS BB/U (Berat Badan menurut Umur)</div>
+    {{-- Interpretasi --}}
+    <div class="info-box" style="border-left-color: #FFC107;">
+        <h3>💡 Interpretasi & Rekomendasi</h3>
+        <p><strong>Kategori Z-Score WHO:</strong></p>
+        <ul style="margin: 5px 0;">
+            <li><strong>Normal:</strong> Z-Score antara -2 dan +2 (pertumbuhan sesuai standar)</li>
+            <li><strong>Waspada:</strong> Z-Score antara -3 dan -2 atau +2 dan +3 (perlu perhatian)</li>
+            <li><strong>Perlu Perhatian:</strong> Z-Score < -3 atau > +3 (perlu konsultasi medis)</li>
+        </ul>
         
-        @if($weightHistory)
-            @php
-                $wZscore = $weightHistory->zscore;
-                $wClass = 'normal';
-                if ($wZscore < -2 || $wZscore > 3) $wClass = 'danger';
-                elseif ($wZscore > 1) $wClass = 'warning';
-            @endphp
-            
-            <div class="result-box {{ $wClass }}">
-                <div class="result-title">{{ $weightHistory->hasil_diagnosa }}</div>
-                <p><strong>Z-Score:</strong> <span class="zscore-badge">{{ number_format($wZscore, 2) }}</span></p>
-                <p style="margin-top: 8px;"><strong>Interpretasi:</strong></p>
-                <p>{{ $weightHistory->deskripsi_diagnosa }}</p>
-            </div>
-            
-            <div class="recommendation">
-                <strong>💡 Rekomendasi Tindakan:</strong>
-                <p>{{ $weightHistory->penanganan }}</p>
-            </div>
-        @else
-            <p>Data tidak tersedia</p>
+        @if($latestHeight && $latestWeight)
+        <p style="margin-top: 15px;"><strong>Kesimpulan:</strong></p>
+        <p>
+            Berdasarkan pemeriksaan terakhir pada usia {{ $latest->age }} bulan, 
+            @if($latestHeight->zscore >= -2 && $latestHeight->zscore <= 2 && $latestWeight->zscore >= -2 && $latestWeight->zscore <= 2)
+                pertumbuhan anak berada dalam kategori <strong>NORMAL</strong>. Pertahankan pola makan sehat dan pemeriksaan rutin.
+            @else
+                @if($latestHeight->zscore < -2 || $latestHeight->zscore > 2)
+                    tinggi badan anak memerlukan perhatian khusus.
+                @endif
+                @if($latestWeight->zscore < -2 || $latestWeight->zscore > 2)
+                    Berat badan anak memerlukan perhatian khusus.
+                @endif
+                Disarankan untuk berkonsultasi dengan tenaga kesehatan untuk evaluasi lebih lanjut.
+            @endif
+        </p>
         @endif
-    </div>
-
-    {{-- Page Break --}}
-    <div class="page-break"></div>
-
-    {{-- Tabel Referensi TB/U --}}
-    <div class="section">
-        <div class="section-title">📋 REFERENSI KATEGORI TB/U</div>
-        <table class="category-table">
-            <thead>
-                <tr>
-                    <th style="width: 20%;">Kategori</th>
-                    <th style="width: 15%;">Rentang Z-Score</th>
-                    <th style="width: 30%;">Interpretasi</th>
-                    <th style="width: 35%;">Rekomendasi / Tindakan</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>Sangat Pendek</strong></td>
-                    <td>Z &lt; -3</td>
-                    <td>Anak mengalami stunting berat</td>
-                    <td>Perlu intervensi segera, konsultasi dokter gizi/pediatri</td>
-                </tr>
-                <tr>
-                    <td><strong>Pendek</strong></td>
-                    <td>-3 ≤ Z &lt; -2</td>
-                    <td>Anak menunjukkan risiko stunting</td>
-                    <td>Pantau pertumbuhan dan berikan asupan protein tinggi</td>
-                </tr>
-                <tr>
-                    <td><strong>Normal</strong></td>
-                    <td>-2 ≤ Z ≤ +2</td>
-                    <td>Tinggi badan sesuai umur</td>
-                    <td>Pertahankan pola makan bergizi dan aktivitas fisik</td>
-                </tr>
-                <tr>
-                    <td><strong>Tinggi</strong></td>
-                    <td>+2 &lt; Z ≤ +3</td>
-                    <td>Tinggi badan di atas rata-rata</td>
-                    <td>Awasi pertumbuhan, pastikan asupan seimbang</td>
-                </tr>
-                <tr>
-                    <td><strong>Sangat Tinggi</strong></td>
-                    <td>Z &gt; +3</td>
-                    <td>Pertumbuhan berlebih</td>
-                    <td>Evaluasi kemungkinan kelebihan hormon pertumbuhan atau pola makan tidak seimbang</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    {{-- Tabel Referensi BB/U --}}
-    <div class="section">
-        <div class="section-title">📋 REFERENSI KATEGORI BB/U</div>
-        <table class="category-table">
-            <thead>
-                <tr>
-                    <th style="width: 20%;">Kategori</th>
-                    <th style="width: 15%;">Rentang Z-Score</th>
-                    <th style="width: 30%;">Interpretasi</th>
-                    <th style="width: 35%;">Rekomendasi / Tindakan</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>Gizi Kurang</strong></td>
-                    <td>Z &lt; -2</td>
-                    <td>Anak kekurangan gizi</td>
-                    <td>Tambah porsi makan bergizi tinggi protein, konsultasi ke ahli gizi</td>
-                </tr>
-                <tr>
-                    <td><strong>Gizi Normal</strong></td>
-                    <td>-2 ≤ Z ≤ +1</td>
-                    <td>Berat badan sesuai umur</td>
-                    <td>Pertahankan pola makan sehat dan aktivitas fisik rutin</td>
-                </tr>
-                <tr>
-                    <td><strong>Risiko Gizi Lebih</strong></td>
-                    <td>+1 &lt; Z ≤ +2</td>
-                    <td>Potensi kelebihan berat badan</td>
-                    <td>Kurangi makanan tinggi gula/lemak, lebihkan buah & sayur</td>
-                </tr>
-                <tr>
-                    <td><strong>Gizi Lebih</strong></td>
-                    <td>+2 &lt; Z ≤ +3</td>
-                    <td>Anak mengalami overweight</td>
-                    <td>Atur pola makan dan perbanyak aktivitas fisik</td>
-                </tr>
-                <tr>
-                    <td><strong>Obesitas</strong></td>
-                    <td>Z &gt; +3</td>
-                    <td>Anak mengalami obesitas</td>
-                    <td>Konsultasikan dengan dokter, kurangi asupan kalori tinggi</td>
-                </tr>
-            </tbody>
-        </table>
     </div>
 
     {{-- Footer --}}
     <div class="footer">
-        <p><strong>Catatan Penting:</strong></p>
-        <p>Laporan ini dibuat berdasarkan standar WHO Z-Score untuk monitoring pertumbuhan anak.</p>
-        <p>Hasil ini bersifat informatif dan sebaiknya dikonsultasikan dengan tenaga kesehatan profesional.</p>
-        <p style="margin-top: 10px;">© {{ date('Y') }} Healthy Monitoring System</p>
+        <p>
+            <strong>Catatan:</strong> Laporan ini dibuat secara otomatis oleh sistem Growth Monitoring for Stunting.<br>
+            Data berdasarkan standar WHO Z-Score. Untuk interpretasi lebih lanjut, konsultasikan dengan tenaga kesehatan profesional.
+        </p>
+        <p style="margin-top: 10px;">
+            © {{ date('Y') }} Growth Monitoring System | Dicetak: {{ now()->locale('id')->isoFormat('D MMMM YYYY, HH:mm') }} WIB
+        </p>
     </div>
 </body>
 </html>

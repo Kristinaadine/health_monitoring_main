@@ -46,33 +46,168 @@
     
     @if (count($data) > 0)
         <div class="address p-3 bg-white">
-            <h6 class="m-0 text-dark d-flex align-items-center">{{ $data[0]->name }} <span class="small ms-auto"><a
-                        href="#" class="fw-bold text-decoration-none text-success" data-bs-toggle="modal"
-                        data-bs-target="#modalChange"><i class="icofont-location-arrow"></i> {{__('monitoring.change')}}</a></span></h6>
+            <div class="d-flex align-items-center">
+                {{-- Foto Anak --}}
+                @if($data[0]->photo)
+                    <img src="{{ asset('uploads/growth-monitoring/' . $data[0]->photo) }}" 
+                         class="rounded-circle me-3" 
+                         style="width: 60px; height: 60px; object-fit: cover; border: 3px solid #28a745;">
+                @else
+                    <div class="rounded-circle bg-secondary me-3 d-flex align-items-center justify-content-center" 
+                         style="width: 60px; height: 60px;">
+                        <i class="icofont-baby icofont-2x text-white"></i>
+                    </div>
+                @endif
+                
+                <div class="flex-grow-1">
+                    <h6 class="m-0 text-dark">{{ $data[0]->name }}</h6>
+                    @if($data[0]->child_id)
+                        <div class="d-flex align-items-center">
+                            <small class="text-muted me-2">🏥 ID: <strong>{{ $data[0]->child_id }}</strong></small>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" 
+                                    onclick="copyToClipboard('{{ $data[0]->child_id }}')" 
+                                    title="Copy ID">
+                                <i class="icofont-copy"></i>
+                            </button>
+                        </div>
+                    @endif
+                </div>
+                
+                <span class="small">
+                    <a href="#" class="fw-bold text-decoration-none text-success" data-bs-toggle="modal"
+                       data-bs-target="#modalChange">
+                        <i class="icofont-location-arrow"></i> {{__('monitoring.change')}}
+                    </a>
+                </span>
+            </div>
         </div>
         <div class="p-3">
-            <div class="d-flex align-items-center mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-3">
                 <h6 class="mb-0 fw-bold">{{__('monitoring.growth_chart')}}</h6>
+                @if(count($data) > 0)
+                <a href="{{ locale_route('growth-monitoring.download-complete-report', ['name' => $data[0]->name]) }}" 
+                   class="btn btn-sm btn-danger">
+                    <i class="icofont-file-pdf"></i> Unduh Laporan PDF
+                </a>
+                @endif
             </div>
             
-            {{-- Penjelasan Z-Score --}}
-            <div class="alert alert-info mb-3" role="alert">
-                <h6 class="alert-heading"><i class="icofont-info-circle"></i> Apa itu Z-Score?</h6>
-                <p class="small mb-2">Z-Score adalah ukuran standar WHO untuk menilai pertumbuhan anak. Grafik ini menunjukkan perkembangan tinggi dan berat badan anak Anda dari waktu ke waktu.</p>
-                <hr class="my-2">
-                <p class="small mb-0"><strong>Cara Membaca:</strong></p>
-                <ul class="small mb-0">
-                    <li><strong>Garis Hijau (Height):</strong> Perkembangan tinggi badan</li>
-                    <li><strong>Garis Biru (Weight):</strong> Perkembangan berat badan</li>
-                    <li><strong>Z-Score -2 sampai +2:</strong> Normal ✅</li>
-                    <li><strong>Z-Score < -2:</strong> Perlu perhatian ⚠️</li>
-                    <li><strong>Z-Score > +2:</strong> Perlu perhatian ⚠️</li>
-                </ul>
+            {{-- Ringkasan Data Terbaru --}}
+            @if(count($data) > 0)
+            <div class="card mb-3 border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title mb-3"><i class="icofont-chart-line"></i> Ringkasan Terbaru ({{ $data[0]->age }} bulan)</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-success me-2">🟢</span>
+                                <strong>Tinggi Badan (TB/U)</strong>
+                            </div>
+                            @php
+                                $latestHeight = $data[0]->history->where('type', 'LH')->first();
+                                $heightStatus = 'Normal ✅';
+                                $heightColor = 'success';
+                                if ($latestHeight && $latestHeight->zscore) {
+                                    if ($latestHeight->zscore < -2 || $latestHeight->zscore > 2) {
+                                        $heightStatus = 'Perlu Perhatian ⚠️';
+                                        $heightColor = 'danger';
+                                    } elseif ($latestHeight->zscore < -1 || $latestHeight->zscore > 1) {
+                                        $heightStatus = 'Waspada ⚠️';
+                                        $heightColor = 'warning';
+                                    }
+                                }
+                            @endphp
+                            <p class="mb-0">
+                                <span class="fs-5 fw-bold">{{ $latestHeight ? number_format($latestHeight->zscore, 2) : 'N/A' }}</span>
+                                <br>
+                                <span class="badge bg-{{ $heightColor }}">{{ $heightStatus }}</span>
+                            </p>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-primary me-2">🔵</span>
+                                <strong>Berat Badan (BB/U)</strong>
+                            </div>
+                            @php
+                                $latestWeight = $data[0]->history->where('type', 'W')->first();
+                                $weightStatus = 'Normal ✅';
+                                $weightColor = 'success';
+                                if ($latestWeight && $latestWeight->zscore) {
+                                    if ($latestWeight->zscore < -2 || $latestWeight->zscore > 2) {
+                                        $weightStatus = 'Perlu Perhatian ⚠️';
+                                        $weightColor = 'danger';
+                                    } elseif ($latestWeight->zscore < -1 || $latestWeight->zscore > 1) {
+                                        $weightStatus = 'Waspada ⚠️';
+                                        $weightColor = 'warning';
+                                    }
+                                }
+                            @endphp
+                            <p class="mb-0">
+                                <span class="fs-5 fw-bold">{{ $latestWeight ? number_format($latestWeight->zscore, 2) : 'N/A' }}</span>
+                                <br>
+                                <span class="badge bg-{{ $weightColor }}">{{ $weightStatus }}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
+            @endif
             
+            {{-- Grafik --}}
             <figure class="highcharts-figure">
                 <div id="container"></div>
             </figure>
+            
+            {{-- Interpretasi Otomatis --}}
+            @if(count($data) > 0)
+            <div class="alert alert-light border mb-3" role="alert">
+                <h6 class="alert-heading"><i class="icofont-info-circle"></i> Interpretasi Otomatis</h6>
+                @php
+                    $latestHeight = $data[0]->history->where('type', 'LH')->first();
+                    $latestWeight = $data[0]->history->where('type', 'W')->first();
+                @endphp
+                <p class="mb-0 small">
+                    Pada usia <strong>{{ $data[0]->age }} bulan</strong>, 
+                    @if($latestHeight && $latestHeight->zscore)
+                        tinggi badan anak berada dalam kategori 
+                        <strong class="text-{{ $latestHeight->zscore >= -2 && $latestHeight->zscore <= 2 ? 'success' : 'danger' }}">
+                            {{ $latestHeight->zscore >= -2 && $latestHeight->zscore <= 2 ? 'Normal' : 'Perlu Perhatian' }}
+                        </strong>
+                    @endif
+                    dan 
+                    @if($latestWeight && $latestWeight->zscore)
+                        berat badan berada dalam kategori 
+                        <strong class="text-{{ $latestWeight->zscore >= -2 && $latestWeight->zscore <= 2 ? 'success' : 'danger' }}">
+                            {{ $latestWeight->zscore >= -2 && $latestWeight->zscore <= 2 ? 'Normal' : 'Perlu Perhatian' }}
+                        </strong>
+                    @endif
+                    berdasarkan standar WHO.
+                </p>
+            </div>
+            @endif
+            
+            {{-- Legenda Sederhana --}}
+            <div class="card border-0 bg-light mb-3">
+                <div class="card-body p-3">
+                    <h6 class="mb-2"><i class="icofont-question-circle"></i> Cara Membaca Grafik</h6>
+                    <div class="row small">
+                        <div class="col-6">
+                            <p class="mb-1"><span class="badge bg-success">🟢</span> Tinggi Badan (TB/U)</p>
+                            <p class="mb-1"><span class="badge bg-primary">🔵</span> Berat Badan (BB/U)</p>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1"><span class="badge bg-success">✅</span> Normal (-2 s/d +2)</p>
+                            <p class="mb-1"><span class="badge bg-warning">⚠️</span> Waspada (-3 s/d -2 atau +2 s/d +3)</p>
+                            <p class="mb-1"><span class="badge bg-danger">⚠️</span> Perlu Perhatian (< -3 atau > +3)</p>
+                        </div>
+                    </div>
+                    <hr class="my-2">
+                    <p class="mb-0 small text-muted">
+                        <i class="icofont-info-circle"></i> Grafik menunjukkan perkembangan anak dibandingkan standar WHO. 
+                        Garis hijau untuk tinggi, biru untuk berat. Area hijau = normal, kuning = waspada, merah = perlu perhatian.
+                    </p>
+                </div>
+            </div>
         </div>
         <div class="address p-3 bg-white">
             <h6 class="m-0 text-dark">{{__('monitoring.history')}} - {{ $data[0]->name }} </h6>
@@ -171,6 +306,7 @@
                                     <span class="small ms-3"><a href="#" data-id="{{ encrypt($item->id) }}"
                                             class="text-decoration-none text-danger deleteBtn"><i class="icofont-trash"></i>
                                             {{__('monitoring.delete')}}</a></span>
+                                            
                                 </p>
                             </div>
                         </div>
@@ -202,19 +338,42 @@
     <script src="https://code.highcharts.com/highcharts.js"></script>
     <script src="https://code.highcharts.com/modules/accessibility.js"></script>
     <script>
+        // Copy to Clipboard function
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                $.notify("ID berhasil dicopy: " + text, "success");
+            }).catch(function(err) {
+                // Fallback for older browsers
+                const tempInput = document.createElement('input');
+                tempInput.value = text;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                $.notify("ID berhasil dicopy: " + text, "success");
+            });
+        }
+    </script>
+    <script>
         Highcharts.chart('container', {
             chart: {
-                type: 'line'
+                type: 'line',
+                backgroundColor: '#FAFAFA'
             },
             title: {
                 text: 'Grafik Perkembangan Pertumbuhan Anak',
                 style: {
                     fontSize: '16px',
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    color: '#333'
                 }
             },
             subtitle: {
-                text: 'Berdasarkan Standar WHO Z-Score'
+                text: 'Berdasarkan Standar WHO Z-Score',
+                style: {
+                    fontSize: '12px',
+                    color: '#666'
+                }
             },
             credits: {
                 enabled: false
@@ -222,115 +381,175 @@
             xAxis: {
                 categories: {!! json_encode($graph['xAxis']) !!},
                 title: {
-                    text: 'Usia'
+                    text: 'Usia',
+                    style: {
+                        fontWeight: 'bold'
+                    }
                 }
             },
             yAxis: {
                 title: {
-                    text: 'Z-Score'
+                    text: 'Z-Score',
+                    style: {
+                        fontWeight: 'bold'
+                    }
                 },
+                // Zona warna background
+                plotBands: [{
+                    from: -2,
+                    to: 2,
+                    color: 'rgba(85, 191, 59, 0.1)', // Hijau muda - Normal
+                    label: {
+                        text: 'Normal',
+                        style: {
+                            color: '#55BF3B',
+                            fontWeight: 'bold'
+                        }
+                    }
+                }, {
+                    from: -3,
+                    to: -2,
+                    color: 'rgba(255, 193, 7, 0.1)', // Kuning muda - Waspada
+                    label: {
+                        text: 'Waspada',
+                        style: {
+                            color: '#FFC107'
+                        }
+                    }
+                }, {
+                    from: 2,
+                    to: 3,
+                    color: 'rgba(255, 193, 7, 0.1)', // Kuning muda - Waspada
+                    label: {
+                        text: 'Waspada',
+                        style: {
+                            color: '#FFC107'
+                        }
+                    }
+                }, {
+                    from: -5,
+                    to: -3,
+                    color: 'rgba(244, 67, 54, 0.1)', // Merah muda - Perlu Perhatian
+                    label: {
+                        text: 'Perlu Perhatian',
+                        style: {
+                            color: '#F44336'
+                        }
+                    }
+                }, {
+                    from: 3,
+                    to: 5,
+                    color: 'rgba(244, 67, 54, 0.1)', // Merah muda - Perlu Perhatian
+                    label: {
+                        text: 'Perlu Perhatian',
+                        style: {
+                            color: '#F44336'
+                        }
+                    }
+                }],
+                // Garis referensi tipis
                 plotLines: [{
                     value: 0,
                     color: '#55BF3B',
-                    width: 2,
-                    label: {
-                        text: 'Normal',
-                        align: 'right',
-                        style: {
-                            color: '#55BF3B'
-                        }
-                    }
+                    width: 1,
+                    dashStyle: 'dot',
+                    zIndex: 1
                 }, {
                     value: -2,
-                    color: '#D89A1E',
-                    dashStyle: 'dash',
+                    color: '#FFC107',
                     width: 1,
-                    label: {
-                        text: 'Batas Bawah Normal',
-                        align: 'right',
-                        style: {
-                            color: '#D89A1E'
-                        }
-                    }
+                    dashStyle: 'dash',
+                    zIndex: 1
                 }, {
                     value: 2,
-                    color: '#D89A1E',
-                    dashStyle: 'dash',
+                    color: '#FFC107',
                     width: 1,
-                    label: {
-                        text: 'Batas Atas Normal',
-                        align: 'right',
-                        style: {
-                            color: '#D89A1E'
-                        }
-                    }
+                    dashStyle: 'dash',
+                    zIndex: 1
                 }, {
                     value: -3,
-                    color: '#DF5353',
-                    dashStyle: 'dash',
+                    color: '#F44336',
                     width: 1,
-                    label: {
-                        text: 'Perlu Perhatian',
-                        align: 'right',
-                        style: {
-                            color: '#DF5353'
-                        }
-                    }
+                    dashStyle: 'dash',
+                    zIndex: 1
                 }, {
                     value: 3,
-                    color: '#DF5353',
-                    dashStyle: 'dash',
+                    color: '#F44336',
                     width: 1,
-                    label: {
-                        text: 'Perlu Perhatian',
-                        align: 'right',
-                        style: {
-                            color: '#DF5353'
-                        }
-                    }
+                    dashStyle: 'dash',
+                    zIndex: 1
                 }]
             },
             tooltip: {
                 shared: true,
                 crosshairs: true,
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                borderColor: '#CCC',
+                borderRadius: 8,
+                shadow: true,
+                useHTML: true,
                 formatter: function() {
-                    let s = '<b>' + this.x + '</b><br/>';
+                    let s = '<div style="padding: 5px;"><b>' + this.x + '</b><br/>';
                     this.points.forEach(function(point) {
                         let status = '';
+                        let icon = '';
                         if (point.y >= -2 && point.y <= 2) {
-                            status = ' (Normal ✅)';
-                        } else if (point.y < -2 || point.y > 2) {
-                            status = ' (Perlu Perhatian ⚠️)';
+                            status = 'Normal';
+                            icon = '✅';
+                        } else if (point.y >= -3 && point.y < -2 || point.y > 2 && point.y <= 3) {
+                            status = 'Waspada';
+                            icon = '⚠️';
+                        } else {
+                            status = 'Perlu Perhatian';
+                            icon = '⚠️';
                         }
-                        s += '<span style="color:' + point.color + '">\u25CF</span> ' + 
-                             point.series.name + ': <b>' + point.y.toFixed(2) + '</b>' + status + '<br/>';
+                        
+                        let seriesName = point.series.name === 'Tinggi Badan (TB/U)' ? 'TB/U' : 'BB/U';
+                        s += '<span style="color:' + point.color + '; font-size: 14px;">\u25CF</span> ' + 
+                             '<b>' + seriesName + ':</b> ' + point.y.toFixed(2) + ' ' + icon + ' ' + status + '<br/>';
                     });
+                    s += '</div>';
                     return s;
                 }
             },
             plotOptions: {
                 line: {
+                    lineWidth: 3, // Garis lebih tebal
                     dataLabels: {
                         enabled: true,
                         formatter: function() {
                             return this.y.toFixed(1);
+                        },
+                        style: {
+                            fontWeight: 'bold',
+                            textOutline: '1px white'
                         }
                     },
                     enableMouseTracking: true,
                     marker: {
                         enabled: true,
-                        radius: 4
+                        radius: 5,
+                        lineWidth: 2,
+                        lineColor: '#FFFFFF'
                     }
                 }
             },
             series: [{
                 name: 'Tinggi Badan (TB/U)',
                 data: {!! json_encode($graph['height']) !!},
-                color: '#55BF3B'
+                color: '#55BF3B', // Hijau
+                marker: {
+                    symbol: 'circle' // Lingkaran ●
+                },
+                zIndex: 2
             }, {
                 name: 'Berat Badan (BB/U)',
                 data: {!! json_encode($graph['weight']) !!},
-                color: '#2196F3'
+                color: '#2196F3', // Biru
+                marker: {
+                    symbol: 'diamond' // Diamond ◆
+                },
+                zIndex: 2
             }]
         });
 

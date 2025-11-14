@@ -11,6 +11,55 @@ use App\Models\GrowthMonitoringHistoryModel;
 
 class GrowthMonitoringController extends Controller
 {
+    /**
+     * Get user data (child_id dan photo) untuk user yang sudah pernah input
+     */
+    public function getUserData(Request $request)
+    {
+        $user = auth()->user();
+        
+        if (!$user) {
+            return response()->json([
+                'has_data' => false,
+                'child_id' => null,
+                'error' => 'User not authenticated'
+            ], 401);
+        }
+        
+        // Cek apakah user sudah punya child_id di database
+        if (!empty($user->child_id)) {
+            // Gunakan child_id yang sudah ada (PERMANEN)
+            $childId = $user->child_id;
+        } else {
+            // Generate child_id baru dengan format: [Nomor Urut]-[Huruf Urut]-[4 Angka Random]
+            $totalUsersWithChildId = \App\Models\User::whereNotNull('child_id')
+                ->where('child_id', '!=', '')
+                ->count();
+            
+            $nomorUrut = str_pad($totalUsersWithChildId + 1, 2, '0', STR_PAD_LEFT);
+            $hurufUrut = chr(65 + $totalUsersWithChildId); // A, B, C, ...
+            $angkaRandom = str_pad(rand(1000, 9999), 4, '0', STR_PAD_LEFT);
+            
+            $childId = "{$nomorUrut}-{$hurufUrut}-{$angkaRandom}";
+            
+            // Simpan ke database (PERMANEN)
+            $user->child_id = $childId;
+            $user->save();
+        }
+        
+        // Ambil foto dari data pertama (jika ada)
+        $firstData = GrowthMonitoringModel::where('users_id', $user->id)
+            ->orderBy('created_at', 'asc')
+            ->first();
+        
+        return response()->json([
+            'has_data' => $firstData ? true : false,
+            'child_id' => $childId,
+            'photo' => $firstData ? $firstData->photo : null,
+            'photo_url' => ($firstData && $firstData->photo) ? asset('uploads/growth-monitoring/' . $firstData->photo) : null
+        ]);
+    }
+    
     public function index(Request $request)
     {
         $setting = SettingModel::all();
@@ -102,6 +151,7 @@ class GrowthMonitoringController extends Controller
                 'gender' => 'required|in:L,P',
                 'height' => 'required|numeric|min:40|max:130',
                 'weight' => 'required|numeric|min:2|max:50',
+                'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             ], [
                 'name.required' => 'Nama wajib diisi.',
                 'age.required' => 'Usia wajib diisi.',
@@ -115,7 +165,9 @@ class GrowthMonitoringController extends Controller
                 'weight.required' => 'Berat badan wajib diisi.',
                 'weight.min' => 'Berat badan minimal 2 kg.',
                 'weight.max' => 'Berat badan maksimal 50 kg (untuk anak 0-60 bulan).',
-                'weight.max' => 'Berat badan maksimal 100 kg.',
+                'photo.image' => 'File harus berupa gambar.',
+                'photo.mimes' => 'Format foto harus JPG, PNG, atau JPEG.',
+                'photo.max' => 'Ukuran foto maksimal 2MB.',
             ]);
 
             \Log::info('Growth Monitoring Store - Validation passed');
@@ -123,6 +175,70 @@ class GrowthMonitoringController extends Controller
             $data = $validated;
             $data['users_id'] = auth()->user()->id;
             $data['login_created'] = auth()->user()->email;
+            
+            $user = auth()->user();
+            
+            // Cek apakah user sudah punya child_id di database
+            if (!empty($user->child_id)) {
+                // Gunakan child_id yang sudah ada (PERMANEN)
+                $childId = $user->child_id;
+            } else {
+                // Generate child_id baru dengan format: [Nomor Urut]-[Huruf Urut]-[4 Angka Random]
+                // Hitung total user yang sudah punya child_id
+                $totalUsersWithChildId = \App\Models\User::whereNotNull('child_id')
+                    ->where('child_id', '!=', '')
+                    ->count();
+                
+                $nomorUrut = str_pad($totalUsersWithChildId + 1, 2, '0', STR_PAD_LEFT);
+                $hurufUrut = chr(65 + $totalUsersWithChildId); // A, B, C, ...
+                $angkaRandom = str_pad(rand(1000, 9999), 4, '0', STR_PAD_LEFT);
+                
+                $childId = "{$nomorUrut}-{$hurufUrut}-{$angkaRandom}";
+                
+                // Simpan ke database (PERMANEN)
+                $user->child_id = $childId;
+                $user->save();
+                
+                \Log::info('Generated NEW child_id', [
+                    'user_id' => $user->id,
+                    'child_id' => $childId
+                ]);
+            }
+            
+            $data['child_id'] = $childId;
+            
+            \Log::info('Using child_id', [
+                'user_id' => $user->id,
+                'child_id' => $childId
+            ]);
+            
+            \Log::info('Growth Monitoring Store - Final child_id to be saved', [
+                'user_id' => $user->id,
+                'child_id' => $data['child_id']
+            ]);
+            
+            // Cek data sebelumnya untuk foto
+            $firstData = GrowthMonitoringModel::where('users_id', $user->id)
+                ->orderBy('created_at', 'asc')
+                ->first();
+            
+            // Handle photo upload
+            if ($request->hasFile('photo')) {
+                $photo = $request->file('photo');
+                $photoName = time() . '_' . uniqid() . '.' . $photo->getClientOriginalExtension();
+                $photo->move(public_path('uploads/growth-monitoring'), $photoName);
+                $data['photo'] = $photoName;
+                
+                // Hapus foto lama jika ada
+                if ($firstData && $firstData->photo && file_exists(public_path('uploads/growth-monitoring/' . $firstData->photo))) {
+                    @unlink(public_path('uploads/growth-monitoring/' . $firstData->photo));
+                }
+                
+                \Log::info('Growth Monitoring Store - Photo uploaded', ['filename' => $photoName]);
+            } else {
+                // Gunakan foto dari data pertama (jika ada)
+                $data['photo'] = $firstData ? $firstData->photo : null;
+            }
 
             $growth = GrowthMonitoringModel::create($data);
             \Log::info('Growth Monitoring Store - Growth created', ['id' => $growth->id]);
@@ -146,6 +262,7 @@ class GrowthMonitoringController extends Controller
                 'status' => 'success',
                 'message' => 'Hasil Z-Score berhasil disimpan',
                 'redirect' => $redirectUrl,
+                'child_id' => $growth->child_id, // Kirim child_id untuk ditampilkan
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Growth Monitoring Store - Validation Error', ['errors' => $e->errors()]);
@@ -323,7 +440,7 @@ class GrowthMonitoringController extends Controller
     }
     
     /**
-     * Generate PDF Report
+     * Generate PDF Report - Single Record
      */
     public function downloadReport($locale, $id)
     {
@@ -362,6 +479,57 @@ class GrowthMonitoringController extends Controller
             \Log::error('PDF Generation Error', [
                 'error' => $e->getMessage(),
                 'id' => $id
+            ]);
+            
+            return redirect()->back()->with('error', 'Gagal generate laporan: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Generate PDF Report - All Records for Current Child
+     */
+    public function downloadCompleteReport(Request $request)
+    {
+        try {
+            $name = $request->name;
+            
+            if (!$name) {
+                return redirect()->back()->with('error', 'Nama anak tidak ditemukan');
+            }
+            
+            // Get all data for this child
+            $data = GrowthMonitoringModel::with('history')
+                ->where('users_id', auth()->user()->id)
+                ->where('name', $name)
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            if ($data->isEmpty()) {
+                return redirect()->back()->with('error', 'Data tidak ditemukan');
+            }
+            
+            // Prepare report data
+            $reportData = [
+                'data' => $data,
+                'childName' => $name,
+            ];
+            
+            // Load view
+            $pdf = \PDF::loadView('monitoring.growth-monitoring.report-pdf', $reportData);
+            
+            // Set paper size and orientation
+            $pdf->setPaper('a4', 'portrait');
+            
+            // Generate filename
+            $filename = 'Laporan_Lengkap_' . str_replace(' ', '_', $name) . '_' . date('Ymd') . '.pdf';
+            
+            // Download PDF
+            return $pdf->download($filename);
+            
+        } catch (\Exception $e) {
+            \Log::error('PDF Complete Report Generation Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             
             return redirect()->back()->with('error', 'Gagal generate laporan: ' . $e->getMessage());
