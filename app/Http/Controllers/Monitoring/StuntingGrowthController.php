@@ -130,6 +130,32 @@ class StuntingGrowthController extends Controller
         // ]);
     }
 
+    /**
+     * Calculate Z-Score using WHO LMS Method
+     * 
+     * @param float $nilaiAnak - Actual measurement (height or weight)
+     * @param object $param - WHO parameters (L, M, S)
+     * @return float - Calculated Z-Score
+     */
+    private function hitungZScore($nilaiAnak, $param)
+    {
+        // WHO LMS Method Formula:
+        // If L = 0 (special case): Z = ln(X/M) / S
+        // If L ≠ 0 (general case): Z = ((X/M)^L - 1) / (L·S)
+        
+        if ($param->L == 0) {
+            // Kasus khusus: L = 0
+            // Z = ln(X/M) / S
+            return log($nilaiAnak / $param->M) / $param->S;
+        } else {
+            // Kasus umum: L ≠ 0
+            // Z = ((X/M)^L - 1) / (L·S)
+            $ratio = $nilaiAnak / $param->M;
+            $powered = pow($ratio, $param->L);
+            return ($powered - 1) / ($param->L * $param->S);
+        }
+    }
+
     public function lhfa($lh, $age, $gender)
     {
         $param = ZScoreModel::where('month', $age)->where('gender', $gender)->where('type', 'LH')->first();
@@ -139,18 +165,8 @@ class StuntingGrowthController extends Controller
             return 0;
         }
 
-        $zscore = 0;
-
-        if ($param->L >= 1) {
-            $pembilang = $lh - $param->M;
-            $penyebut = $param->S * $param->M;
-            $zscore = $pembilang / $penyebut;
-        } else {
-            $pembilang = pow($lh / $param->M, $param->L);
-            $pembilang2 = $pembilang - 1;
-            $penyebut = $param->L * $param->S;
-            $zscore = $pembilang2 / $penyebut;
-        }
+        // Hitung Z-Score menggunakan WHO LMS Method
+        $zscore = $this->hitungZScore($lh, $param);
 
         return $zscore;
     }
@@ -164,18 +180,8 @@ class StuntingGrowthController extends Controller
             return 0;
         }
 
-        $zscore = 0;
-
-        if ($param->L >= 1) {
-            $pembilang = $w - $param->M;
-            $penyebut = $param->S * $param->M;
-            $zscore = $pembilang / $penyebut;
-        } else {
-            $pembilang = pow($w / $param->M, $param->L);
-            $pembilang2 = $pembilang - 1;
-            $penyebut = $param->L * $param->S;
-            $zscore = $pembilang2 / $penyebut;
-        }
+        // Hitung Z-Score menggunakan WHO LMS Method
+        $zscore = $this->hitungZScore($w, $param);
 
         return $zscore;
     }
