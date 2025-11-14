@@ -105,22 +105,25 @@
                             </div>
                             @php
                                 $latestHeight = $data[0]->history->where('type', 'LH')->first();
-                                $heightStatus = 'Normal ✅';
+                                $heightStatus = 'Normal';
+                                $heightStatusIcon = '✅';
                                 $heightColor = 'success';
                                 if ($latestHeight && $latestHeight->zscore) {
-                                    if ($latestHeight->zscore < -2 || $latestHeight->zscore > 2) {
-                                        $heightStatus = 'Perlu Perhatian ⚠️';
+                                    if ($latestHeight->zscore < -3 || $latestHeight->zscore > 3) {
+                                        $heightStatus = 'Perlu Perhatian';
+                                        $heightStatusIcon = '⚠️';
                                         $heightColor = 'danger';
-                                    } elseif ($latestHeight->zscore < -1 || $latestHeight->zscore > 1) {
-                                        $heightStatus = 'Waspada ⚠️';
+                                    } elseif ($latestHeight->zscore < -2 || $latestHeight->zscore > 2) {
+                                        $heightStatus = 'Waspada';
+                                        $heightStatusIcon = '⚠️';
                                         $heightColor = 'warning';
                                     }
                                 }
                             @endphp
                             <p class="mb-0">
-                                <span class="fs-5 fw-bold">{{ $latestHeight ? number_format($latestHeight->zscore, 2) : 'N/A' }}</span>
+                                <span class="fs-5 fw-bold text-success">{{ $latestHeight ? number_format($latestHeight->zscore, 2) : 'N/A' }}</span>
                                 <br>
-                                <span class="badge bg-{{ $heightColor }}">{{ $heightStatus }}</span>
+                                <span class="badge bg-{{ $heightColor }}">{{ $heightStatusIcon }} {{ $heightStatus }}</span>
                             </p>
                         </div>
                         <div class="col-6">
@@ -130,22 +133,25 @@
                             </div>
                             @php
                                 $latestWeight = $data[0]->history->where('type', 'W')->first();
-                                $weightStatus = 'Normal ✅';
+                                $weightStatus = 'Normal';
+                                $weightStatusIcon = '✅';
                                 $weightColor = 'success';
                                 if ($latestWeight && $latestWeight->zscore) {
-                                    if ($latestWeight->zscore < -2 || $latestWeight->zscore > 2) {
-                                        $weightStatus = 'Perlu Perhatian ⚠️';
+                                    if ($latestWeight->zscore < -3 || $latestWeight->zscore > 3) {
+                                        $weightStatus = 'Perlu Perhatian';
+                                        $weightStatusIcon = '⚠️';
                                         $weightColor = 'danger';
-                                    } elseif ($latestWeight->zscore < -1 || $latestWeight->zscore > 1) {
-                                        $weightStatus = 'Waspada ⚠️';
+                                    } elseif ($latestWeight->zscore < -2 || $latestWeight->zscore > 2) {
+                                        $weightStatus = 'Waspada';
+                                        $weightStatusIcon = '⚠️';
                                         $weightColor = 'warning';
                                     }
                                 }
                             @endphp
                             <p class="mb-0">
-                                <span class="fs-5 fw-bold">{{ $latestWeight ? number_format($latestWeight->zscore, 2) : 'N/A' }}</span>
+                                <span class="fs-5 fw-bold text-primary">{{ $latestWeight ? number_format($latestWeight->zscore, 2) : 'N/A' }}</span>
                                 <br>
-                                <span class="badge bg-{{ $weightColor }}">{{ $weightStatus }}</span>
+                                <span class="badge bg-{{ $weightColor }}">{{ $weightStatusIcon }} {{ $weightStatus }}</span>
                             </p>
                         </div>
                     </div>
@@ -185,6 +191,18 @@
                 </p>
             </div>
             @endif
+            
+            {{-- Penjelasan Z-Score --}}
+            <div class="alert alert-info border-0 mb-3" role="alert">
+                <h6 class="alert-heading"><i class="icofont-bulb"></i> Apa itu Z-Score?</h6>
+                <p class="mb-0 small">
+                    <strong>Z-score</strong> menunjukkan posisi tinggi/berat anak dibanding standar WHO. 
+                    <br>• <strong>0</strong> = rata-rata (normal)
+                    <br>• <strong>Negatif</strong> (contoh: -1.5) = di bawah rata-rata
+                    <br>• <strong>Positif</strong> (contoh: +1.5) = di atas rata-rata
+                    <br><em>Semakin jauh dari 0, semakin perlu perhatian khusus.</em>
+                </p>
+            </div>
             
             {{-- Legenda Sederhana --}}
             <div class="card border-0 bg-light mb-3">

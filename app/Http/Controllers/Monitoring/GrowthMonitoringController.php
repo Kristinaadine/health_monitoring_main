@@ -243,11 +243,46 @@ class GrowthMonitoringController extends Controller
             $growth = GrowthMonitoringModel::create($data);
             \Log::info('Growth Monitoring Store - Growth created', ['id' => $growth->id]);
 
-            $this->lhfa($request->height, $request->age, $growth->id, $request->gender);
+            // Hitung Z-Score untuk data baru
+            $heightZScore = $this->lhfa($request->height, $request->age, $growth->id, $request->gender);
             \Log::info('Growth Monitoring Store - LHFA completed');
             
-            $this->wfa($request->weight, $request->age, $growth->id, $request->gender);
+            $weightZScore = $this->wfa($request->weight, $request->age, $growth->id, $request->gender);
             \Log::info('Growth Monitoring Store - WFA completed');
+            
+            // Validasi data anomali: cek perubahan ekstrem
+            $anomalyWarnings = [];
+            $previousData = GrowthMonitoringModel::where('users_id', $user->id)
+                ->where('name', $request->name)
+                ->where('id', '!=', $growth->id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+            
+            if ($previousData) {
+                $ageDiff = abs($request->age - $previousData->age);
+                
+                // Ambil Z-Score sebelumnya
+                $prevHeightHistory = $previousData->history->where('type', 'LH')->first();
+                $prevWeightHistory = $previousData->history->where('type', 'W')->first();
+                
+                if ($prevHeightHistory && $heightZScore !== null) {
+                    $heightZDiff = abs($heightZScore - $prevHeightHistory->zscore);
+                    
+                    // Peringatan jika perubahan > 3 SD dalam < 1 bulan
+                    if ($ageDiff < 1 && $heightZDiff > 3) {
+                        $anomalyWarnings[] = "⚠️ Perubahan tinggi badan tampak tidak wajar (Z-Score berubah {$heightZDiff} dalam {$ageDiff} bulan). Mohon pastikan kembali input tinggi badan.";
+                    }
+                }
+                
+                if ($prevWeightHistory && $weightZScore !== null) {
+                    $weightZDiff = abs($weightZScore - $prevWeightHistory->zscore);
+                    
+                    // Peringatan jika perubahan > 3 SD dalam < 1 bulan
+                    if ($ageDiff < 1 && $weightZDiff > 3) {
+                        $anomalyWarnings[] = "⚠️ Perubahan berat badan tampak tidak wajar (Z-Score berubah {$weightZDiff} dalam {$ageDiff} bulan). Mohon pastikan kembali input berat badan.";
+                    }
+                }
+            }
 
             try {
                 $redirectUrl = locale_route('growth-monitoring.show', encrypt($growth->id));
@@ -258,12 +293,19 @@ class GrowthMonitoringController extends Controller
                 $redirectUrl = locale_route('growth-monitoring.index');
             }
 
-            return response()->json([
+            $responseData = [
                 'status' => 'success',
                 'message' => 'Hasil Z-Score berhasil disimpan',
                 'redirect' => $redirectUrl,
                 'child_id' => $growth->child_id, // Kirim child_id untuk ditampilkan
-            ], 200);
+            ];
+            
+            // Tambahkan peringatan anomali jika ada
+            if (!empty($anomalyWarnings)) {
+                $responseData['warnings'] = $anomalyWarnings;
+            }
+
+            return response()->json($responseData, 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Growth Monitoring Store - Validation Error', ['errors' => $e->errors()]);
             return response()->json([
@@ -305,7 +347,7 @@ class GrowthMonitoringController extends Controller
                 'deskripsi_diagnosa' => 'Data Z-Score untuk usia dan jenis kelamin ini tidak tersedia dalam database.',
                 'penanganan' => 'Silakan konsultasi dengan tenaga kesehatan.',
             ]);
-            return;
+            return 0;
         }
 
         $zscore = 0;
@@ -357,6 +399,8 @@ class GrowthMonitoringController extends Controller
         ];
 
         $result = GrowthMonitoringHistoryModel::create($data);
+        
+        return $zscore;
     }
 
     public function wfa($w, $age, $id, $gender)
@@ -375,7 +419,7 @@ class GrowthMonitoringController extends Controller
                 'deskripsi_diagnosa' => 'Data Z-Score untuk usia dan jenis kelamin ini tidak tersedia dalam database.',
                 'penanganan' => 'Silakan konsultasi dengan tenaga kesehatan.',
             ]);
-            return;
+            return 0;
         }
         
         $zscore = 0;
@@ -427,6 +471,8 @@ class GrowthMonitoringController extends Controller
         ];
 
         $result = GrowthMonitoringHistoryModel::create($data);
+        
+        return $zscore;
     }
 
     public function show($locale, $id)

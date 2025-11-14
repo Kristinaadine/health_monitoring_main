@@ -464,9 +464,18 @@
                                 $.notify(response.message, "success");
                             }
                             
+                            // Tampilkan peringatan anomali jika ada
+                            if (response.warnings && response.warnings.length > 0) {
+                                setTimeout(function() {
+                                    response.warnings.forEach(function(warning) {
+                                        $.notify(warning, "warning");
+                                    });
+                                }, 1000);
+                            }
+                            
                             setTimeout(function() {
                                 location.replace(response.redirect);
-                            }, 1500);
+                            }, response.warnings ? 3000 : 1500);
                         } else {
                             $.notify(response.message, "error");
                         }
