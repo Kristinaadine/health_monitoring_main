@@ -101,6 +101,11 @@
                     <br>• <strong>Negatif</strong> (contoh: -1.5) = di bawah rata-rata
                     <br>• <strong>Positif</strong> (contoh: +1.5) = di atas rata-rata
                 </p>
+                <div class="alert alert-warning mt-2 mb-0 py-1 border-0" style="background-color: #fff3cd;">
+                    <p class="mb-0 text-center" style="font-size: 0.95rem;">
+                        <strong style="font-weight: 700; color: #856404;">⚠️ Semakin jauh dari 0, semakin perlu perhatian khusus!</strong>
+                    </p>
+                </div>
             </div>
         </div>
         
